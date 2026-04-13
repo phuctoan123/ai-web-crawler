@@ -1,30 +1,33 @@
 # AI Web Crawler (VnExpress)
 
-Crawler bat bai viet tu VnExpress va trich xuat du lieu co cau truc bang `crawl4ai` + LLM.
+This project crawls article listings from VnExpress and uses an LLM to extract structured data into a CSV file.
 
-## Tinh nang
+## What This Project Does
 
-- Crawl du lieu tu VnExpress theo trang.
-- Trich xuat cac truong:
+- Crawls VnExpress pages.
+- Extracts article fields:
   - `title`
   - `url`
   - `summary`
   - `category`
   - `published_at`
-- Loai bo ban ghi trung lap theo tieu de.
-- Xuat ket qua ra `vnexpress_articles.csv`.
+- Removes duplicates by article title.
+- Saves results to `vnexpress_articles.csv`.
 
-## Cau truc thu muc
+## Project Structure
 
-- `main.py`: entrypoint chay crawler.
-- `config.py`: URL, CSS selector, required keys.
-- `models/venue.py`: Pydantic schema cho du lieu bai viet.
-- `utils/scraper_utils.py`: browser config + LLM extraction + xu ly tung page.
-- `utils/data_utils.py`: helper validate/duplicate/save csv.
+- `main.py`: Main entrypoint and crawl loop.
+- `config.py`: Base URL, CSS selector, required fields.
+- `models/venue.py`: Pydantic schema for extracted article data.
+- `utils/scraper_utils.py`: Browser setup, LLM extraction strategy, page processing.
+- `utils/data_utils.py`: Validation, deduplication, CSV export helpers.
 
-## Cai dat
+## Requirements
 
-Yeu cau: Python 3.11+
+- Python 3.11+
+- A valid LLM API key (OpenAI is the default provider in this project)
+
+## Installation
 
 ```powershell
 py -3.11 -m venv .venv
@@ -34,28 +37,50 @@ pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
-## Cau hinh moi truong
+## Environment Variables
 
-Tao file `.env` (khong commit len git):
+Create a `.env` file in the project root:
 
 ```env
 LLM_PROVIDER=openai/gpt-4o-mini
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-Co the doi model bang cach thay gia tri `LLM_PROVIDER`.
+Optional variables:
 
-## Chay du an
+- `LLM_API_BASE`: Custom API base URL if required by your provider.
+- `LLM_API_KEY`: Generic fallback key variable.
+
+## Run
 
 ```powershell
 python main.py
 ```
 
-Ket qua se duoc ghi vao file:
+When successful, the crawler writes:
 
 - `vnexpress_articles.csv`
 
-## Luu y bao mat
+## How to Change Target or Extraction Rules
 
-- Khong commit `.env`, `.venv`, `.idea` hoac API key.
-- Neu key da tung bi lo, hay rotate/revoke ngay.
+- Update `BASE_URL` and `CSS_SELECTOR` in `config.py`.
+- Update the required fields in `REQUIRED_KEYS`.
+- Update the schema in `models/venue.py`.
+- Update the extraction instruction in `utils/scraper_utils.py` if needed.
+
+## Common Issues
+
+- `playwright ... Executable doesn't exist`
+  - Run: `python -m playwright install chromium`
+
+- `Insufficient Balance` or provider billing errors
+  - Add credits or switch to another provider/model in `.env`.
+
+- No output rows
+  - Verify your CSS selector still matches the website.
+  - Check LLM extraction logs for schema mismatch or API errors.
+
+## Security Notes
+
+- Never commit `.env`, `.venv`, `.idea`, or API keys.
+- If a key is exposed, rotate/revoke it immediately.
