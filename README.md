@@ -25,7 +25,7 @@ This project crawls article listings from VnExpress and uses an LLM to extract s
 ## Requirements
 
 - Python 3.11+
-- A valid LLM API key (OpenAI is the default provider in this project)
+- A valid LLM API key (Gemini 2.0 Flash is the default provider in this project)
 
 ## Installation
 
@@ -42,8 +42,8 @@ python -m playwright install chromium
 Create a `.env` file in the project root:
 
 ```env
-LLM_PROVIDER=openai/gpt-4o-mini
-OPENAI_API_KEY=your_openai_api_key
+LLM_PROVIDER=gemini/gemini-2.0-flash
+GOOGLE_API_KEY=your_google_ai_studio_api_key
 ```
 
 Optional variables:

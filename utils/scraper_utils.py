@@ -26,6 +26,8 @@ def _is_fatal_provider_error(message: str) -> bool:
         "authentication",
         "unauthorized",
         "invalid_request_error",
+        "not_found",
+        "not found",
         "quota",
     ]
     return any(pattern in lower_msg for pattern in fatal_patterns)
@@ -54,8 +56,11 @@ def get_llm_strategy() -> LLMExtractionStrategy:
         LLMExtractionStrategy: The settings for how to extract data using LLM.
     """
     # https://docs.crawl4ai.com/api/strategies/#llmextractionstrategy
-    provider = os.getenv("LLM_PROVIDER", "openai/gpt-4o-mini")
+    provider = os.getenv("LLM_PROVIDER", "gemini/gemini-2.0-flash")
     api_key = (
+        os.getenv("GOOGLE_API_KEY")
+        or os.getenv("GEMINI_API_KEY")
+        or
         os.getenv("OPENAI_API_KEY")
         or os.getenv("LLM_API_KEY")
         or os.getenv("OLLAMA_API_KEY")
