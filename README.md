@@ -1,8 +1,8 @@
-# AI Web Crawler (VnExpress)
+# 🕸️ AI Web Crawler (VnExpress)
 
 This project crawls article listings from VnExpress and uses an LLM to extract structured data into a CSV file.
 
-## What This Project Does
+## ✨ What This Project Does
 
 - Crawls VnExpress pages.
 - Extracts article fields:
@@ -14,7 +14,7 @@ This project crawls article listings from VnExpress and uses an LLM to extract s
 - Removes duplicates by article title.
 - Saves results to `vnexpress_articles.csv`.
 
-## Project Structure
+## 🗂️ Project Structure
 
 - `main.py`: Main entrypoint and crawl loop.
 - `config.py`: Base URL, CSS selector, required fields.
@@ -22,12 +22,12 @@ This project crawls article listings from VnExpress and uses an LLM to extract s
 - `utils/scraper_utils.py`: Browser setup, LLM extraction strategy, page processing.
 - `utils/data_utils.py`: Validation, deduplication, CSV export helpers.
 
-## Requirements
+## ✅ Requirements
 
 - Python 3.11+
 - A valid LLM API key (Gemini 2.0 Flash is the default provider in this project)
 
-## Installation
+## ⚙️ Installation
 
 ```powershell
 py -3.11 -m venv .venv
@@ -37,7 +37,7 @@ pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
-## Environment Variables
+## 🔐 Environment Variables
 
 Create a `.env` file in the project root:
 
@@ -51,7 +51,7 @@ Optional variables:
 - `LLM_API_BASE`: Custom API base URL if required by your provider.
 - `LLM_API_KEY`: Generic fallback key variable.
 
-## Run
+## ▶️ Run
 
 ```powershell
 python main.py
@@ -61,14 +61,14 @@ When successful, the crawler writes:
 
 - `vnexpress_articles.csv`
 
-## How to Change Target or Extraction Rules
+## 🧩 How to Change Target or Extraction Rules
 
 - Update `BASE_URL` and `CSS_SELECTOR` in `config.py`.
 - Update the required fields in `REQUIRED_KEYS`.
 - Update the schema in `models/venue.py`.
 - Update the extraction instruction in `utils/scraper_utils.py` if needed.
 
-## Common Issues
+## 🛠️ Common Issues
 
 - `playwright ... Executable doesn't exist`
   - Run: `python -m playwright install chromium`
@@ -80,7 +80,7 @@ When successful, the crawler writes:
   - Verify your CSS selector still matches the website.
   - Check LLM extraction logs for schema mismatch or API errors.
 
-## Security Notes
+## 🔒 Security Notes
 
 - Never commit `.env`, `.venv`, `.idea`, or API keys.
 - If a key is exposed, rotate/revoke it immediately.
