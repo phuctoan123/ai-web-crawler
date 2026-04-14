@@ -47,12 +47,12 @@ async def crawl_venues():
             )
 
             if no_results_found:
-                print("No more venues found. Ending crawl.")
-                break  # Stop crawling when "No Results Found" message appears
+                print("[WARN] Crawl stop condition reached. Ending crawl gracefully.")
+                break
 
             if not venues:
-                print(f"No venues extracted from page {page_number}.")
-                break  # Stop if no venues are extracted
+                print(f"[WARN] No records extracted from page {page_number}. Ending crawl.")
+                break
 
             # Add the venues from this page to the total list
             all_venues.extend(venues)
@@ -64,9 +64,9 @@ async def crawl_venues():
     # Save the collected venues to a CSV file
     if all_venues:
         save_venues_to_csv(all_venues, "vnexpress_articles.csv")
-        print(f"Saved {len(all_venues)} articles to 'vnexpress_articles.csv'.")
+        print(f"[INFO] Saved {len(all_venues)} articles to 'vnexpress_articles.csv'.")
     else:
-        print("No venues were found during the crawl.")
+        print("[WARN] No records were found during the crawl.")
 
     # Display usage statistics for the LLM strategy
     llm_strategy.show_usage()

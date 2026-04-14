@@ -14,6 +14,23 @@ from models.venue import Venue
 from utils.data_utils import is_complete_venue, is_duplicate_venue
 
 
+def _log(level: str, message: str) -> None:
+    print(f"[{level}] {message}")
+
+
+def _is_fatal_provider_error(message: str) -> bool:
+    lower_msg = message.lower()
+    fatal_patterns = [
+        "insufficient balance",
+        "invalid api key",
+        "authentication",
+        "unauthorized",
+        "invalid_request_error",
+        "quota",
+    ]
+    return any(pattern in lower_msg for pattern in fatal_patterns)
+
+
 def get_browser_config() -> BrowserConfig:
     """
     Returns the browser configuration for the crawler.
@@ -62,42 +79,6 @@ def get_llm_strategy() -> LLMExtractionStrategy:
     )
 
 
-async def check_no_results(
-    crawler: AsyncWebCrawler,
-    url: str,
-    session_id: str,
-) -> bool:
-    """
-    Checks if the "No Results Found" message is present on the page.
-
-    Args:
-        crawler (AsyncWebCrawler): The web crawler instance.
-        url (str): The URL to check.
-        session_id (str): The session identifier.
-
-    Returns:
-        bool: True if "No Results Found" message is found, False otherwise.
-    """
-    # Fetch the page without any CSS selector or extraction strategy
-    result = await crawler.arun(
-        url=url,
-        config=CrawlerRunConfig(
-            cache_mode=CacheMode.BYPASS,
-            session_id=session_id,
-        ),
-    )
-
-    if result.success:
-        if "No Results Found" in result.cleaned_html:
-            return True
-    else:
-        print(
-            f"Error fetching page for 'No Results Found' check: {result.error_message}"
-        )
-
-    return False
-
-
 async def fetch_and_process_page(
     crawler: AsyncWebCrawler,
     page_number: int,
@@ -127,52 +108,62 @@ async def fetch_and_process_page(
             - bool: A flag indicating if the "No Results Found" message was encountered.
     """
     url = f"{base_url}?page={page_number}"
-    print(f"Loading page {page_number}...")
-
-    # Check if "No Results Found" message is present
-    no_results = await check_no_results(crawler, url, session_id)
-    if no_results:
-        return [], True  # No more results, signal to stop crawling
+    _log("INFO", f"Loading page {page_number}...")
 
     # Fetch page content with the extraction strategy
-    result = await crawler.arun(
-        url=url,
-        config=CrawlerRunConfig(
-            cache_mode=CacheMode.BYPASS,  # Do not use cached data
-            extraction_strategy=llm_strategy,  # Strategy for data extraction
-            css_selector=css_selector,  # Target specific content on the page
-            session_id=session_id,  # Unique session ID for the crawl
-        ),
-    )
+    try:
+        result = await crawler.arun(
+            url=url,
+            config=CrawlerRunConfig(
+                cache_mode=CacheMode.BYPASS,  # Do not use cached data
+                extraction_strategy=llm_strategy,  # Strategy for data extraction
+                css_selector=css_selector,  # Target specific content on the page
+                session_id=session_id,  # Unique session ID for the crawl
+            ),
+        )
+    except Exception as exc:
+        _log("ERROR", f"Unhandled crawl exception on page {page_number}: {exc}")
+        return [], True
 
     if not (result.success and result.extracted_content):
-        print(f"Error fetching page {page_number}: {result.error_message}")
+        _log("ERROR", f"Error fetching page {page_number}: {result.error_message}")
         return [], False
 
     # Parse extracted content
-    extracted_data = json.loads(result.extracted_content)
-    if not extracted_data:
-        print(f"No venues found on page {page_number}.")
+    try:
+        extracted_data = json.loads(result.extracted_content)
+    except json.JSONDecodeError as exc:
+        _log(
+            "ERROR",
+            f"Invalid JSON extracted on page {page_number}: {exc}. Raw output will be skipped.",
+        )
         return [], False
 
-    # After parsing extracted content
-    print("Extracted data:", extracted_data)
+    if not extracted_data:
+        _log("WARN", f"No extracted records found on page {page_number}.")
+        return [], False
 
     # Process venues
     complete_venues = []
     for venue in extracted_data:
-        # Debugging: Print each venue to understand its structure
-        print("Processing venue:", venue)
+        if venue.get("error") is True:
+            provider_error = str(venue.get("content", "Unknown extraction error"))
+            _log("ERROR", f"Provider extraction error on page {page_number}: {provider_error}")
+            if _is_fatal_provider_error(provider_error):
+                _log("ERROR", "Fatal provider error detected. Stopping crawl gracefully.")
+                return [], True
+            continue
 
         # Ignore the 'error' key if it's False
         if venue.get("error") is False:
             venue.pop("error", None)  # Remove the 'error' key if it's False
 
         if not is_complete_venue(venue, required_keys):
+            _log("WARN", f"Incomplete record skipped on page {page_number}: {venue}")
             continue  # Skip incomplete venues
 
         if is_duplicate_venue(venue["title"], seen_names):
-            print(f"Duplicate article '{venue['title']}' found. Skipping.")
+            _log("INFO", f"Duplicate article '{venue['title']}' found. Skipping.")
             continue  # Skip duplicate venues
 
         # Add venue to the list
@@ -180,8 +171,8 @@ async def fetch_and_process_page(
         complete_venues.append(venue)
 
     if not complete_venues:
-        print(f"No complete venues found on page {page_number}.")
+        _log("WARN", f"No complete records found on page {page_number}.")
         return [], False
 
-    print(f"Extracted {len(complete_venues)} venues from page {page_number}.")
+    _log("INFO", f"Extracted {len(complete_venues)} records from page {page_number}.")
     return complete_venues, False  # Continue crawling
